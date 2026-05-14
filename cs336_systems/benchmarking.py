@@ -6,15 +6,17 @@ from cs336_basics.model import BasicsTransformerLM
 import pickle
 from cs336_basics.config import MODEL_CONFIGS
 from einops import rearrange
+import torch.cuda.nvtx as nvtx
 
-def benchmarking(func: Callable, warmup: int, steps: int,) -> list[float]:
+def benchmarking(func: Callable, warmup: int, steps: int, nvtx_label: str) -> list[float]:
     for _ in range(warmup):
         func()
     times = []
     torch.cuda.synchronize()
     for _ in range(steps):
         start = timeit.default_timer()
-        func()
+        with nvtx.range(nvtx_label):
+            func()
         torch.cuda.synchronize()
         end = timeit.default_timer()
         times.append(end - start)
@@ -70,15 +72,18 @@ def benchmarking_with_model(config: ModelConfig, warmup: int, steps: int):
     inputs = torch.randint(0, config.vocab_size, (config.batch_size, config.context_length), device=device)
     targets = torch.randint(0, config.vocab_size, (config.batch_size, config.context_length), device=inputs.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.1, betas=(0.9, 0.95))
-    f = benchmarking(lambda: forward_pass(model, inputs, targets), warmup, steps)
-    fb = benchmarking(lambda: forward_and_backward_pass(model, inputs, targets, optimizer), warmup, steps)
-    fbs = benchmarking(lambda: single_step(model, inputs, targets, optimizer), warmup, steps)
+
+    ex_setups = {
+        #"forward_pass": lambda: forward_pass(model, inputs, targets),
+        "forward_and_backward_pass": lambda: forward_and_backward_pass(model, inputs, targets, optimizer),
+        "single_step": lambda: single_step(model, inputs, targets, optimizer),
+    }
+    results = {}
+    for setup_name, setup_func in ex_setups.items():
+        results[setup_name] = benchmarking(setup_func, warmup, steps, setup_name)
+    
     with open("data/benchmarking_results.pkl", "wb") as file:
-        pickle.dump({
-            "f": f,
-            "fb": fb,
-            "fbs": fbs,
-        }, file)
+        pickle.dump(results, file)
     
 
 if __name__ == "__main__":

@@ -530,3 +530,16 @@ class CausalMultiHeadSelfAttention(nn.Module):
 
 def silu(x: torch.Tensor):
     return x * torch.sigmoid(x)
+
+if __name__ == "__main__":
+    model = BasicsTransformerLM(
+        vocab_size=1000,
+        context_length=1024,
+        d_model=256,
+        num_layers=12,
+        num_heads=8,
+        d_ff=1024,
+        rope_theta=10000.0,
+    ).to("cuda")
+    from torchinfo import summary
+    summary(model, input_size=(1, 1024), dtypes=[torch.int64])

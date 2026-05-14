@@ -14,6 +14,7 @@ def benchmarking(func: Callable, warmup: int, steps: int, nvtx_label: str) -> li
         func()
     times = []
     torch.cuda.synchronize()
+    torch.cuda.memory._record_memory_history(max_entries=1000000)
     for _ in range(steps):
         start = timeit.default_timer()
         with nvtx.range(nvtx_label):
@@ -21,6 +22,8 @@ def benchmarking(func: Callable, warmup: int, steps: int, nvtx_label: str) -> li
         torch.cuda.synchronize()
         end = timeit.default_timer()
         times.append(end - start)
+    torch.cuda.memory._dump_snapshot(f"data/memory_snapshot_{nvtx_label}.pickle")
+    torch.cuda.memory._record_memory_history(enabled=None)
     return times
 
 def forward_pass(
@@ -96,4 +99,4 @@ def benchmarking_with_model(config: ModelConfig, warmup: int, steps: int):
     
 
 if __name__ == "__main__":
-    benchmarking_with_model(MODEL_CONFIGS['small'], warmup=5, steps=10)
+    benchmarking_with_model(MODEL_CONFIGS['small'], warmup=5, steps=1)

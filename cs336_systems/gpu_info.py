@@ -1,0 +1,11 @@
+import torch
+props = torch.cuda.get_device_properties(0)
+print(f"设备名: {props.name}")
+print(f"SM 数量: {props.multi_processor_count}")
+print(f"每个 SM 最大线程数: {props.max_threads_per_multi_processor}")
+print(f"每个 block 最大线程数: {props.max_threads_per_block}")
+print(f"共享内存/SM: {props.shared_memory_per_multiprocessor / 1024} KB")
+print(f"寄存器/SM: {props.regs_per_multiprocessor}")
+print(f"L2 Cache: {props.L2_cache_size / 1024 / 1024} MB")
+print(f"显存: {props.total_memory / 1024**3:.1f} GB")
+print(f"Compute Capability: {props.major}.{props.minor}")

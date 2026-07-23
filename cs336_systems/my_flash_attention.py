@@ -509,10 +509,11 @@ class MyFlashAttention_triton(torch.autograd.Function):
         dV = dV_flat.reshape(ctx.batch_dim + (V_flat.shape[-2], V_flat.shape[-1]))
         return dQ, dK, dV, None
 
+
 if __name__ == "__main__":
-    d_model: int = 64
-    context_length: int = 256
-    batch_size: int = 8
+    d_model: int = 128
+    context_length: int = 32768
+    batch_size: int = 1
     num_heads: int = 1
     d_k = d_v = d_model // num_heads
     device = torch.device("cuda")
@@ -526,9 +527,13 @@ if __name__ == "__main__":
     Q.requires_grad_()
     K.requires_grad_()
     V.requires_grad_()
-    O = MyFlashAttention_triton.apply(Q, K, V)
-    loss = O.pow(2).sum()
-    loss.backward()
-    print(Q.grad.shape)
-    print(K.grad.shape)
-    print(V.grad.shape)
+    dO = torch.randn_like(Q)
+    #O = MyFlashAttention_triton.apply(Q, K, V)
+    from cs336_basics.model import scaled_dot_product_attention
+    ms = triton.testing.do_bench(
+        #lambda: scaled_dot_product_attention(Q, K, V).backward(gradient=dO),
+        lambda: MyFlashAttention_triton.apply(Q, K, V).backward(gradient=dO),
+        warmup=20,
+        rep=100
+    )
+    print(ms)

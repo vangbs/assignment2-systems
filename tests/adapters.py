@@ -1,7 +1,7 @@
 from __future__ import annotations
 import torch
 import cs336_systems.my_flash_attention as my_flash_attention
-
+import cs336_systems.my_data_parallism as my_data_parallism
 
 def get_flashattention_autograd_function_pytorch() -> type:
     """
@@ -49,8 +49,7 @@ def get_ddp(module: torch.nn.Module) -> torch.nn.Module:
     Returns:
         Instance of a DDP class.
     """
-    # For example: return DDP(module)
-    raise NotImplementedError
+    return my_data_parallism.My_ddp_model(module)
 
 
 def ddp_on_after_backward(ddp_model: torch.nn.Module, optimizer: torch.optim.Optimizer):
@@ -64,8 +63,7 @@ def ddp_on_after_backward(ddp_model: torch.nn.Module, optimizer: torch.optim.Opt
         optimizer: torch.optim.Optimizer
             Optimizer being used with the DDP-wrapped model.
     """
-    # For example: ddp_model.finish_gradient_synchronization()
-    raise NotImplementedError
+    ddp_model.finish_gradient_synchronization()
 
 
 def get_fsdp(module: torch.nn.Module, compute_dtype: torch.dtype | None = None) -> torch.nn.Module:
@@ -132,4 +130,4 @@ def get_sharded_optimizer(params, optimizer_cls: type[torch.optim.Optimizer], **
     Returns:
         Instance of sharded optimizer.
     """
-    raise NotImplementedError
+    return my_data_parallism.My_ddp_optimizer(params, optimizer_cls, **kwargs)
